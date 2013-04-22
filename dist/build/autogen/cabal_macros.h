@@ -7,3 +7,10 @@
   (major1) == 4 && (major2) <  5 || \
   (major1) == 4 && (major2) == 5 && (minor) <= 1)
 
+/* package parsec-3.1.3 */
+#define VERSION_parsec "3.1.3"
+#define MIN_VERSION_parsec(major1,major2,minor) (\
+  (major1) <  3 || \
+  (major1) == 3 && (major2) <  1 || \
+  (major1) == 3 && (major2) == 1 && (minor) <= 3)
+
