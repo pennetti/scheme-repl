@@ -7,6 +7,13 @@
   (major1) == 4 && (major2) <  5 || \
   (major1) == 4 && (major2) == 5 && (minor) <= 1)
 
+/* package mtl-2.1.2 */
+#define VERSION_mtl "2.1.2"
+#define MIN_VERSION_mtl(major1,major2,minor) (\
+  (major1) <  2 || \
+  (major1) == 2 && (major2) <  1 || \
+  (major1) == 2 && (major2) == 1 && (minor) <= 2)
+
 /* package parsec-3.1.3 */
 #define VERSION_parsec "3.1.3"
 #define MIN_VERSION_parsec(major1,major2,minor) (\

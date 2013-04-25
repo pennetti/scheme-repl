@@ -14,10 +14,11 @@ category:            Scheme
 build-type:          Simple
 cabal-version:       >=1.8
 
-library
-  exposed-modules:     Main
+executable haskell-scheme
+  main-is:             Main.hs
   -- other-modules:       
   build-depends:       base ==4.5.*,
-                       parsec
+                       parsec,
+                       mtl
 
   hs-source-dirs:      src
