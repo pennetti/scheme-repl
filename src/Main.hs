@@ -4,8 +4,8 @@ module Main where
 
 --------------------------------------------------------------------------------
 -- |Import
-import Parser
-import Evaluator
+import LispVal
+import LispEval
 import System.Environment
 import Control.Monad
 -- |End Import
@@ -13,7 +13,7 @@ import Control.Monad
 
 -- |This is the main function
 -- Program takes a single command-line argument which is the string to be
--- parsed via 'readExpr'
+-- parsed via 'readExpr' and evalutated
 main :: IO()
 main = do
     args <- getArgs

@@ -4,7 +4,7 @@
 name:                haskell-scheme
 version:             0.1.0.0
 -- synopsis:            
--- description:         
+description:         Scheme parser and evaluator
 license:             GPL-2
 license-file:        LICENSE
 author:              Travis Pennetti
