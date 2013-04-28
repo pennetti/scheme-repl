@@ -30,10 +30,10 @@ eval val@(Number _) = return val
 eval val@(Bool _) = return val
 eval (List [Atom "quote", val]) = return val
 eval (List [Atom "if", pred, conseq, alt]) = do
-											result <- eval pred
-											case result of
-												Bool False -> eval alt
-												otherwise -> eval conseq
+					result <- eval pred
+					case result of
+						Bool False -> eval alt
+						otherwise -> eval conseq
 eval (List (Atom func : args)) = mapM eval args >>= apply func
 eval badForm = throwError $ BadSpecialForm "Unrecognized special form" badForm
 
@@ -41,7 +41,7 @@ eval badForm = throwError $ BadSpecialForm "Unrecognized special form" badForm
 -- |Function to apply arguments for functions
 apply :: String -> [LispVal] -> ThrowsError LispVal
 apply func args = maybe (throwError $ NotFunction 
-							"Unrecognized primitive function args" func)
+						"Unrecognized primitive function args" func)
 						($ args)
 						(lookup func primitives)
 --(Bool False) ($ args) $ lookup func primitives
@@ -50,29 +50,29 @@ apply func args = maybe (throwError $ NotFunction
 -- |value is [LispVal] -> LispVal
 primitives :: [(String, [LispVal] -> ThrowsError LispVal)]
 primitives = [	-- Numeric Operators --
-				("+", numericBinop (+)),
-				("-", numericBinop (-)),
-				("*", numericBinop (*)),
-				("/", numericBinop div),
-				("mod", numericBinop mod),
-				("quotient", numericBinop quot),
-				("remainder", numericBinop rem),
-				-- Equality Operators --
-				("=", numBoolBinop (==)),
-	        	("<", numBoolBinop (<)),
-	        	(">", numBoolBinop (>)),
-				("/=", numBoolBinop (/=)),
-				(">=", numBoolBinop (>=)),
-				("<=", numBoolBinop (<=)),
-				-- Boolean Operators --
-				("&&", boolBoolBinop (&&)),
-				("||", boolBoolBinop (||)),
-				("string=?", strBoolBinop (==)),
-				("string?", strBoolBinop (>)),
-				("string<=?", strBoolBinop (<=)),
-				("string>=?", strBoolBinop (>=)),
-				-- List Operators --
-				("car", car),
+		("+", numericBinop (+)),
+		("-", numericBinop (-)),
+		("*", numericBinop (*)),
+		("/", numericBinop div),
+		("mod", numericBinop mod),
+		("quotient", numericBinop quot),
+		("remainder", numericBinop rem),
+		-- Equality Operators --
+		("=", numBoolBinop (==)),
+        	("<", numBoolBinop (<)),
+        	(">", numBoolBinop (>)),
+		("/=", numBoolBinop (/=)),
+		(">=", numBoolBinop (>=)),
+		("<=", numBoolBinop (<=)),
+		-- Boolean Operators --
+		("&&", boolBoolBinop (&&)),
+		("||", boolBoolBinop (||)),
+		("string=?", strBoolBinop (==)),
+		("string?", strBoolBinop (>)),
+		("string<=?", strBoolBinop (<=)),
+		("string>=?", strBoolBinop (>=)),
+		-- List Operators --
+		("car", car),
               	("cdr", cdr),
               	("cons", cons),
               	("eq?", eqv),
@@ -88,11 +88,11 @@ numericBinop op params = mapM unpackNum params >>= return . Number . foldl1 op
 -- |Equality Boolean operator
 boolBinop :: (LispVal -> ThrowsError a) -> (a -> a -> Bool) -> [LispVal] -> ThrowsError LispVal
 boolBinop unpacker op args = if length args /= 2
-							then throwError $ NumArgs 2 args
-							else do 
-									left <- unpacker $ args !! 0
-									right <- unpacker $ args !! 1
-									return $ Bool $ left `op` right
+				then throwError $ NumArgs 2 args
+				else do 
+						left <- unpacker $ args !! 0
+						right <- unpacker $ args !! 1
+						return $ Bool $ left `op` right
 -- |Apply boolBinop with necessary unpacker
 numBoolBinop = boolBinop unpackNum
 strBoolBinop = boolBinop unpackStr
@@ -102,9 +102,9 @@ boolBoolBinop = boolBinop unpackBool
 unpackNum :: LispVal -> ThrowsError Integer
 unpackNum (Number n) = return n
 unpackNum (String n) = let parsed = reads n in 	-- Use weak-typing
-						if null parsed
-							then throwError $ TypeMismatch "number" $ String n
-							else return $ fst $ parsed !! 0
+			if null parsed
+				then throwError $ TypeMismatch "number" $ String n
+				else return $ fst $ parsed !! 0
 unpackNum (List [n]) = unpackNum n
 unpackNum notNum = throwError $ TypeMismatch "number" notNum
 
@@ -153,10 +153,10 @@ eqv [(String arg1), (String arg2)] = return $ Bool $ arg1 == arg2
 eqv [(Atom arg1), (Atom arg2)] = return $ Bool $ arg1 == arg2
 eqv [(DottedList xs x), (DottedList ys y)] = eqv [List $ xs ++ [x], List $ ys ++ [y]]
 eqv [(List arg1), (List arg2)] = return $ Bool $ (length arg1 == length arg2) &&
-													(and $ map eqvpair $ zip arg1 arg2)
+						(and $ map eqvpair $ zip arg1 arg2)
 	where eqvpair (x1, x2) = case eqv [x1, x2] of
-							Left err -> False
-							Right (Bool val) -> val
+						Left err -> False
+						Right (Bool val) -> val
 eqv [_, _] = return $ Bool False
 eqv badArgList = throwError $ NumArgs 2 badArgList
 
