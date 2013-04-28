@@ -16,12 +16,12 @@ import Control.Monad
 -- |Data Types
 -- |Data type to hold any lisp value
 data LispVal = Atom String		-- String naming the atom
-			| List [LispVal]	-- List of LispVals, indicated by []
-			| DottedList [LispVal] LispVal		-- Scheme form (a b . c),
-			-- last value of list is stored separately
-			| Number Integer
-			| String String
-			| Bool Bool
+		| List [LispVal]	-- List of LispVals, indicated by []
+		| DottedList [LispVal] LispVal		-- Scheme form (a b . c),
+		-- last value of list is stored separately
+		| Number Integer
+		| String String
+		| Bool Bool
 -- |Data type to hold various error types
 data LispError = NumArgs Integer [LispVal]
                | TypeMismatch String LispVal
@@ -61,10 +61,10 @@ action, and do-notation otherwise.-}
 -- |String identified by opening and closing quotation marks
 parseString :: Parser LispVal
 parseString = do 
-			char '"'	-- Opening quotation
-			x <- many (noneOf "\"")	-- Make sure no quotations in string
-			char '"'	-- Closing quotation
-			return $ String x	-- Use String constructor to convert to LispVal
+		char '"'	-- Opening quotation
+		x <- many (noneOf "\"")	-- Make sure no quotations in string
+		char '"'	-- Closing quotation
+		return $ String x	-- Use String constructor to convert to LispVal
 
 {-NOTE: Instroduction of '<|>' operator tries first parser, and if that fails then
 try the next parser.-}
@@ -73,13 +73,13 @@ try the next parser.-}
 -- |digits, or symbols
 parseAtom :: Parser LispVal
 parseAtom = do 
-			first <- letter <|> symbol
-			rest <- many (letter <|> digit <|> symbol)
-			let atom = [first] ++ rest	-- Convert first to a singleton [first]
-			return $ case atom of
-				"#t" -> Bool True
-				"#f" -> Bool False
-				otherwise -> Atom atom
+	first <- letter <|> symbol
+	rest <- many (letter <|> digit <|> symbol)
+	let atom = [first] ++ rest	-- Convert first to a singleton [first]
+	return $ case atom of
+		"#t" -> Bool True
+		"#f" -> Bool False
+		otherwise -> Atom atom
 
 -- |Number parser
 parseNumber :: Parser LispVal
@@ -155,9 +155,9 @@ showError (UnboundVar message varname) = message ++ ": " ++ varname
 showError (BadSpecialForm message form) = message ++ ": " ++ show form
 showError (NotFunction message func) = message ++ ": " ++ show func
 showError (NumArgs expected found) = "Expected " ++ show expected 
-								++ " args; found values " ++ unwordsList found
+					++ " args; found values " ++ unwordsList found
 showError (TypeMismatch expected found) = "Invalid type: expected " 
-								++ expected ++ ", found " ++ show found
+					++ expected ++ ", found " ++ show found
 showError (Parser parseErr) = "Parse error at " ++ show parseErr
 
 -- |Convert errors into strings and return them
