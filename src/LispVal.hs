@@ -24,12 +24,12 @@ data LispVal = Atom String		-- String naming the atom
 			| Bool Bool
 -- |Data type to hold various error types
 data LispError = NumArgs Integer [LispVal]
-               | TypeMismatch String LispVal
-               | Parser ParseError
-               | BadSpecialForm String LispVal
-               | NotFunction String String
-               | UnboundVar String String
-               | Default String
+            | TypeMismatch String LispVal
+            | Parser ParseError
+            | BadSpecialForm String LispVal
+            | NotFunction String String
+            | UnboundVar String String
+            | Default String
 -- |End Data Types
 --------------------------------------------------------------------------------
 
@@ -70,8 +70,8 @@ parseString = do
 			char '"'	-- Closing quotation
 			return $ String x	-- Use String constructor to convert to LispVal
 
-{-NOTE: Instroduction of '<|>' operator tries first parser, and if that fails then
-try the next parser.-}
+{-NOTE: Instroduction of '<|>' operator tries first parser, and if that fails 
+then try the next parser.-}
 -- |Atom parser
 -- |An atom is a letter or symbol, followed by any number of letters, 
 -- |digits, or symbols
@@ -144,13 +144,6 @@ instance Show LispVal where show = showVal	-- Define the show function for the
 -- LispError
 --------------------------------------------------------------------------------
 
-instance Show LispError where show = showError	-- Define the show function for 
--- the LispError data type
-
-instance Error LispError where	-- Make LispError an instance of Error
-	noMsg = Default "An error has occurred"	
-	strMsg = Default
-
 -- |Partially applied, can be used on any data type
 type ThrowsError = Either LispError 	-- Define type of function which may 
 -- throw a LispError
@@ -173,3 +166,10 @@ trapError action = catchError action (return . show)
 extractValue :: ThrowsError a -> a
 extractValue (Right val) = val
 -- No Left value, since errors only return Right values
+
+instance Show LispError where show = showError	-- Define the show function for 
+-- the LispError data type
+
+instance Error LispError where	-- Make LispError an instance of Error
+	noMsg = Default "An error has occurred"	
+	strMsg = Default
