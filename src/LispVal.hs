@@ -16,12 +16,12 @@ import Control.Monad
 -- |Data Types
 -- |Data type to hold any lisp value
 data LispVal = Atom String		-- String naming the atom
-			| List [LispVal]	-- List of LispVals, indicated by []
-			| DottedList [LispVal] LispVal		-- Scheme form (a b . c),
-			-- last value of list is stored separately
-			| Number Integer
-			| String String
-			| Bool Bool
+		| List [LispVal]	-- List of LispVals, indicated by []
+		| DottedList [LispVal] LispVal		-- Scheme form (a b . c),
+		-- last value of list is stored separately
+		| Number Integer
+		| String String
+		| Bool Bool
 -- |Data type to hold various error types
 data LispError = NumArgs Integer [LispVal]
             | TypeMismatch String LispVal
@@ -154,9 +154,9 @@ showError (UnboundVar message varname) = message ++ ": " ++ varname
 showError (BadSpecialForm message form) = message ++ ": " ++ show form
 showError (NotFunction message func) = message ++ ": " ++ show func
 showError (NumArgs expected found) = "Expected " ++ show expected 
-								++ " args; found values " ++ unwordsList found
+					++ " args; found values " ++ unwordsList found
 showError (TypeMismatch expected found) = "Invalid type: expected " 
-								++ expected ++ ", found " ++ show found
+					++ expected ++ ", found " ++ show found
 showError (Parser parseErr) = "Parse error at " ++ show parseErr
 
 -- |Convert errors into strings and return them
@@ -166,6 +166,7 @@ trapError action = catchError action (return . show)
 extractValue :: ThrowsError a -> a
 extractValue (Right val) = val
 -- No Left value, since errors only return Right values
+<<<<<<< HEAD
 
 instance Show LispError where show = showError	-- Define the show function for 
 -- the LispError data type
@@ -173,3 +174,5 @@ instance Show LispError where show = showError	-- Define the show function for
 instance Error LispError where	-- Make LispError an instance of Error
 	noMsg = Default "An error has occurred"	
 	strMsg = Default
+=======
+>>>>>>> 82ee70543b058d76065d288e26d7a6b6ddd95d01
