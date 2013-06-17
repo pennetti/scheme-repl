@@ -7,7 +7,6 @@ module Main where
 import LispVal
 import LispEval
 import LispConsole
-import LispVar
 import System.Environment
 import Control.Monad
 -- |End Import

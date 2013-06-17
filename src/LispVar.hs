@@ -30,7 +30,7 @@ runIOThrows :: IOThrowsError String -> IO String
 -- Use trapError to turn errors into strings
 runIOThrows action = runErrorT (trapError action) >>= return . extractValue
 
--- |Check if given variable has been bounded
+-- |Check if given variable has been bounded to environment
 isBound :: Env -> String -> IO Bool
 -- Extract variable, then look it up to see if it exists, lift into IO monad
 -- 'const' is used because a function is expected, not a value
@@ -41,7 +41,7 @@ isBound envRef var =
 -- Get environment from IORef, use IOThrowsError monad for error handling
 getVar :: Env -> String -> IOThrowsError LispVal
 getVar envRef var = do
-					env <- liftIO $ readIORef envRef
+					env <- liftIO $ readIORef envRef -- Get environment
 					maybe 	(throwError $ UnboundVar "Getting an unbound variable" var)
 							(liftIO . readIORef)
 							(lookup var env)
@@ -49,7 +49,7 @@ getVar envRef var = do
 -- |Set current variable
 setVar :: Env -> String -> LispVal -> IOThrowsError LispVal
 setVar envRef var value = 	do
-							env <- liftIO $ readIORef envRef
+							env <- liftIO $ readIORef envRef -- Get environment
 							maybe 	(throwError $ UnboundVar "Setting an unbound variable" var)
 									(liftIO . (flip writeIORef value))
 									(lookup var env)

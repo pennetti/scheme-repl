@@ -7,7 +7,6 @@ module LispConsole where
 import System.IO
 import LispEval
 import LispVal
-import LispVar
 import Control.Monad.Error
 import Control.Monad
 -- |End Import
@@ -38,13 +37,17 @@ until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m ()
 until_ pred prompt action = do
 				result <- prompt
 				if pred result
-					then return ()	-- Empty
-					else action result >> until_ pred prompt action	-- Repeat
+					then return () -- Empty
+					else action result >> until_ pred prompt action -- Repeat
+
+primitiveBindings :: IO Env
+primitiveBindings = nullEnv >>= (flip bindVars $ map makePrimitiveFunc primitives)
+	where makePrimitiveFunc (var, func) = (var, PrimitiveFunc func)
 
 -- |Initialize environment with null variable at start
 runOne :: String -> IO ()
-runOne expr = nullEnv >>= flip evalAndPrint expr
+runOne expr = primitiveBindings >>= flip evalAndPrint expr
 
 -- |The REPL (Read Eval Print Loop) until "quit" is entered
 runRepl :: IO ()
-runRepl = nullEnv >>= until_ (== "quit") (readPrompt "Lisp>>> ") . evalAndPrint
+runRepl = primitiveBindings >>= until_ (== "quit") (readPrompt "Lisp>>> ") . evalAndPrint

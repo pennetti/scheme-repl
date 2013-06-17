@@ -9,7 +9,6 @@ import Text.ParserCombinators.Parsec hiding (spaces)
 import Control.Monad.Error
 import Control.Monad
 import LispVal
-import LispVar
 -- |End Import
 --------------------------------------------------------------------------------
 
@@ -25,9 +24,8 @@ data Unpacker = forall a. Eq a => AnyUnpacker (LispVal -> ThrowsError a)
 --------------------------------------------------------------------------------
 
 -- |Map code data type to 'data' data type, both are LispVals
-<<<<<<< HEAD
 eval :: Env -> LispVal -> IOThrowsError LispVal
-eval env val@(String _) = return val 	-- Bind 'val' to String/ Number/ Bool
+eval env val@(String _) = return val 	-- Bind 'val' to LispVal
 eval env val@(Number _) = return val
 eval env val@(Bool _) = return val
 eval env (Atom id) = getVar env id
@@ -41,36 +39,43 @@ eval env (List [Atom "set!", Atom var, form]) =
     										eval env form >>= setVar env var
 eval env (List [Atom "define", Atom var, form]) =
     										eval env form >>= defineVar env var										
-eval env (List (Atom func : args)) = mapM (eval env) args >>= liftThrows . apply func
+eval env (List (Atom "define" : List (Atom var : params) : body)) = 
+	makeNormalFunc env params body >>= defineVar env var
+eval env (List (Atom "define" : DottedList (Atom var : params) varargs : body)) = 
+	makeVarargs varargs env params body >>= defineVar env var
+eval env (List (Atom "lambda" : List params : body)) =
+    makeNormalFunc env params body
+eval env (List (Atom "lambda" : DottedList params varargs : body)) =
+    makeVarargs varargs env params body
+eval env (List (Atom "lambda" : varargs@(Atom _) : body)) =
+    makeVarargs varargs env [] body
+eval env (List (function : args)) = do 
+    func <- eval env function
+    argVals <- mapM (eval env) args
+    apply func argVals
 eval env badForm = throwError $ BadSpecialForm "Unrecognized special form" badForm
-=======
-eval :: LispVal -> ThrowsError LispVal
-eval val@(String _) = return val 	-- Bind 'val' to String/ Number/ Bool
-eval val@(Number _) = return val
-eval val@(Bool _) = return val
-eval (List [Atom "quote", val]) = return val
-eval (List [Atom "if", pred, conseq, alt]) = do
-					result <- eval pred
-					case result of
-						Bool False -> eval alt
-						otherwise -> eval conseq
-eval (List (Atom func : args)) = mapM eval args >>= apply func
-eval badForm = throwError $ BadSpecialForm "Unrecognized special form" badForm
->>>>>>> 82ee70543b058d76065d288e26d7a6b6ddd95d01
 
 
 -- |Function to apply arguments for functions
-apply :: String -> [LispVal] -> ThrowsError LispVal
-apply func args = maybe (throwError $ NotFunction 
-						"Unrecognized primitive function args" func)
-						($ args)
-						(lookup func primitives)
+apply :: LispVal -> [LispVal] -> IOThrowsError LispVal
+apply (PrimitiveFunc func) args = liftThrows $ func args
+apply (Func params varargs body closure) args = 
+    if num params /= num args && varargs == Nothing
+       then throwError $ NumArgs (num params) args
+       else (liftIO $ bindVars closure $ zip params args) >>= bindVarArgs varargs >>= evalBody
+    where remainingArgs = drop (length params) args
+          num = toInteger . length
+          evalBody env = liftM last $ mapM (eval env) body 
+          bindVarArgs arg env = case arg of
+              Just argName -> liftIO $ bindVars env [(argName, List $ remainingArgs)]
+              Nothing -> return env 
 --(Bool False) ($ args) $ lookup func primitives
 
 -- |Primitives returns a list of pairs for 'lookup', key is String
 -- |value is [LispVal] -> LispVal
 primitives :: [(String, [LispVal] -> ThrowsError LispVal)]
-primitives = [	-- Numeric Operators --
+primitives = [	
+		-- Numeric Operators --
 		("+", numericBinop (+)),
 		("-", numericBinop (-)),
 		("*", numericBinop (*)),
@@ -80,8 +85,8 @@ primitives = [	-- Numeric Operators --
 		("remainder", numericBinop rem),
 		-- Equality Operators --
 		("=", numBoolBinop (==)),
-        	("<", numBoolBinop (<)),
-        	(">", numBoolBinop (>)),
+        ("<", numBoolBinop (<)),
+        (">", numBoolBinop (>)),
 		("/=", numBoolBinop (/=)),
 		(">=", numBoolBinop (>=)),
 		("<=", numBoolBinop (<=)),
@@ -94,13 +99,15 @@ primitives = [	-- Numeric Operators --
 		("string>=?", strBoolBinop (>=)),
 		-- List Operators --
 		("car", car),
-              	("cdr", cdr),
-              	("cons", cons),
-              	("eq?", eqv),
-              	("eqv?", eqv),
-              	("equal?", equal)]
+      	("cdr", cdr),
+      	("cons", cons),
+      	-- Equivalence Operators --
+      	("eq?", eqv),
+      	("eqv?", eqv),
+      	("equal?", equal)]
 
 -- |Numeric binary operator 
+-- |Changes every cons operator in the list to the binary function we supply, op
 numericBinop :: (Integer -> Integer -> Integer) -> [LispVal] -> ThrowsError LispVal
 numericBinop op singleVal@[_] = throwError $ NumArgs 2 singleVal
 numericBinop op params = mapM unpackNum params >>= return . Number . foldl1 op
@@ -114,10 +121,10 @@ boolBinop unpacker op args = if length args /= 2
 						left <- unpacker $ args !! 0
 						right <- unpacker $ args !! 1
 						return $ Bool $ left `op` right
--- |Apply boolBinop with necessary unpacker
-numBoolBinop = boolBinop unpackNum
-strBoolBinop = boolBinop unpackStr
-boolBoolBinop = boolBinop unpackBool
+-- |Partially apply boolBinop with necessary unpacker
+numBoolBinop 	= boolBinop unpackNum
+strBoolBinop 	= boolBinop unpackStr
+boolBoolBinop	= boolBinop unpackBool
 
 -- |Unpacks argument list and applies the respective function to it
 unpackNum :: LispVal -> ThrowsError Integer
@@ -158,7 +165,7 @@ cdr [DottedList [xs] x] = return x
 cdr [badArg] = throwError $ TypeMismatch "pair" badArg
 cdr badArgList = throwError $ NumArgs 1 badArgList
 
--- |'cons' takes two parameters and makes a list from them
+-- |'cons' takes two parameters and makes a list from them (:)
 cons :: [LispVal] -> ThrowsError LispVal
 cons [x, List []] = return $ List [x] -- One item list
 cons [x, List xs] = return $ List $ [x] ++ xs	-- Appending to a list
@@ -189,7 +196,7 @@ unpackEquals arg1 arg2 (AnyUnpacker unpacker) = do
 					return $ unpacked1 == unpacked2
 			`catchError` (const $ return False)
 
--- |Use 'unpackEquals' to try all unpackers on each value
+-- |Use 'unpackEquals' to try all unpackers on each value (ignore type diff)
 equal :: [LispVal] -> ThrowsError LispVal
 equal [arg1, arg2] = do
 	primitiveEquals <- liftM or $ mapM (unpackEquals arg1 arg2)
@@ -197,3 +204,11 @@ equal [arg1, arg2] = do
 	eqvEquals <- eqv [arg1, arg2]
 	return $ Bool (primitiveEquals || let (Bool x) = eqvEquals in x)
 equal badArgList = throwError $ NumArgs 2 badArgList
+
+--------------------------------------------------------------------------------
+-- Lispfunc
+--------------------------------------------------------------------------------
+
+makeFunc varargs env params body = return $ Func (map showVal params) varargs body env
+makeNormalFunc = makeFunc Nothing
+makeVarargs = makeFunc . Just . showVal
