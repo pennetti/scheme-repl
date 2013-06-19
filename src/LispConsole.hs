@@ -1,4 +1,4 @@
-{-REPL.hs-}
+{-LispConsole.hs-}
 
 module LispConsole where
 
@@ -26,6 +26,7 @@ evalString env expr = runIOThrows $ liftM show $ (liftThrows $ readExpr expr) >>
 
 -- |Evaluate a string and print the result
 evalAndPrint :: Env -> String -> IO ()
+evalAndPrint _ [] = return ()	-- Ignore empty line
 evalAndPrint env expr = evalString env expr >>= putStrLn
 
 -- |Infinite loop to read string, perform function, produce output;
@@ -40,13 +41,11 @@ until_ pred prompt action = do
 					then return () -- Empty
 					else action result >> until_ pred prompt action -- Repeat
 
-primitiveBindings :: IO Env
-primitiveBindings = nullEnv >>= (flip bindVars $ map makePrimitiveFunc primitives)
-	where makePrimitiveFunc (var, func) = (var, PrimitiveFunc func)
-
 -- |Initialize environment with null variable at start
-runOne :: String -> IO ()
-runOne expr = primitiveBindings >>= flip evalAndPrint expr
+runOne :: [String] -> IO ()
+runOne args = do
+				env <- primitiveBindings >>= flip bindVars [("args", List $ map String $ drop 1 args)]
+				(runIOThrows $ liftM show $ eval env (List [Atom "load", String (args !! 0)]))>>= hPutStrLn stderr
 
 -- |The REPL (Read Eval Print Loop) until "quit" is entered
 runRepl :: IO ()

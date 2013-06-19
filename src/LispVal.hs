@@ -9,6 +9,7 @@ module LispVal where
 import Text.ParserCombinators.Parsec hiding (spaces)
 import Control.Monad.Error
 import Control.Monad
+import System.IO
 import Data.IORef
 -- |End Import
 --------------------------------------------------------------------------------
@@ -27,6 +28,8 @@ data LispVal = Atom String				-- String naming the atom
 				, vararg :: (Maybe String)
 				, body :: [LispVal]
 				, closure :: Env}
+		| IOFunc ([LispVal] -> IOThrowsError LispVal)
+		| Port Handle
 -- |Data type to hold various error types
 data LispError = NumArgs Integer [LispVal]
         | TypeMismatch String LispVal
@@ -48,12 +51,15 @@ symbol :: Parser Char
 symbol = oneOf "!$%&|*+-/:<=>?@^_~"	-- Symbols allowed in Scheme identifiers
 
 -- |Call parser, handle errors
-readExpr :: String -> ThrowsError LispVal
+readOrThrow :: Parser a -> String -> ThrowsError a
 -- 'parse' returns an 'Either' data type Left (error) and Right (value)
 -- Use 'parseExpr' on 'input'
-readExpr input = case parse parseExpr "lisp" input of 
+readOrThrow parser input = case parse parser "lisp" input of 
 	Left err -> throwError $ Parser err
 	Right val -> return val
+
+readExpr = readOrThrow parseExpr
+readExprList = readOrThrow (endBy parseExpr spaces)
 
 -- |Parser which recognizes one or more spaces
 spaces :: Parser ()
@@ -141,6 +147,8 @@ showVal (Func {params = args
 				(case varargs of
 					Nothing -> ""
 					Just arg -> " . " ++ arg) ++ ") ...)"
+showVal (Port _) = "<IO port>"
+showVal (IOFunc _) = "<IO primitive>"
 
 -- |Turns list into a string representation of list elements, point-free style
 unwordsList :: [LispVal] -> String
@@ -244,6 +252,17 @@ defineVar envRef var value =	do
 													return value
 
 -- |Function to bind multiple variables at once
+-- Calls addBinding on each member of bindings (mapM) to create 
+-- list of (String, IORef LispVal) pairs, and then appends the 
+-- current environment to the end of that (++ env)
+--bindVars :: Env -> [(String, LispVal)] -> IO Env
+--bindVars envRef bindings = readIORef envRef >>= extendEnv bindings >>= newIORef
+--	where 	extendEnv bindings env = liftM (++ env) (mapM addBinding bindings)
+--				addBinding (var, value) = 	do 
+--											ref <- newIORef value
+--											return (var, ref)
+			-- Create an IORef to hold new variable, then return (name, value) pair
+-- |Function to bind multiple variables at once
 {-bindVars :: Env -> [(String, LispVal)] -> IO Env
 bindVars envRef bindings = readIORef envRef >>= extendEnv bindings >>= newIORef
 			-- Calls addBinding on each member of bindings (mapM) to create 
@@ -259,4 +278,4 @@ bindVars :: Env -> [(String, LispVal)] -> IO Env
 bindVars envRef bindings = readIORef envRef >>= extendEnv bindings >>= newIORef
     where extendEnv bindings env = liftM (++ env) (mapM addBinding bindings)
           addBinding (var, value) = do ref <- newIORef value
-                                       return (var, ref)										
+                                       return (var, ref)		
